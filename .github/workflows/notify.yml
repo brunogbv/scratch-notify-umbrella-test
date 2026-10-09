@@ -1,0 +1,30 @@
+# Throwaway test of marola-devkit#32 (MIP-0076 row 3). This repo is both caller and "umbrella".
+name: notify umbrella
+on:
+  push:
+    branches: [main]
+permissions: {}
+jobs:
+  notify:
+    # contents: write only so GITHUB_TOKEN can dispatch to this same repo, standing in for the PAT.
+    permissions:
+      contents: write
+    uses: marola-dev/marola-devkit/.github/workflows/notify-umbrella.yml@39e8062dbe3caeaf527a790238c5eb8b38f04c39
+    with:
+      umbrella: brunogbv/scratch-notify-umbrella-test
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+  compare-with-no-permissions:
+    # Real callers set permissions: {}; this checks the compare API still answers with that token.
+    permissions: {}
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          code="$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" \
+            "https://api.github.com/repos/$REPO/compare/$BEFORE...$SHA")"
+          echo "compare with a permissions:{} token: HTTP $code (before=$BEFORE)"
